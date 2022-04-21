@@ -1,0 +1,21 @@
+local-hostname: ${ lower(hostname) }
+instance-id: ${ format("id-%s", lower(hostname)) }
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    nics:
+      match:
+        name: ens*
+      dhcp4: no
+      dhcp6: no
+      addresses:
+      - ${ address }
+      routes:
+      - to: default
+        via: ${ gateway }
+      nameservers:
+        addresses:
+        %{~ for addr in dns_servers ~}
+        - ${ addr }
+        %{~ endfor ~}

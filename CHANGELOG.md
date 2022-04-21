@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## March 21, 2022
+
+HASHICORP-TERRAFORM:
+  * Added example vSphere module & project for deploying a Linux server from a template
+
 ## March 20, 2022
 
 HASHICORP-PACKER:

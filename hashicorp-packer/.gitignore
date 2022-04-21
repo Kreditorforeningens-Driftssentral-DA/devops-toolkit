@@ -1,0 +1,7 @@
+# PACKER ignored files
+
+# Folders
+**/packer_cache/*
+
+# Files
+*.pkrvars.hcl

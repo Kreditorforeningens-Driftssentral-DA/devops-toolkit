@@ -1,0 +1,11 @@
+# Terraform ignorefile
+
+# Folders
+**/.terraform/*
+
+# Files
+*.tfvars
+*.lock.hcl
+*.lock.info
+*.tfstate
+*.backup
