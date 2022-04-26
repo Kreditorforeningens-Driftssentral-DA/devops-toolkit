@@ -169,6 +169,22 @@ resource "boundary_role" "ORG_ADMIN" {
   scope_id = boundary_scope.ORG.id
 }
 
+resource "boundary_role" "PROJ_DEVOPS_ADMIN" {
+  name        = "devops-admin"
+  description = "DevOps Administrator role"
+
+  grant_strings = [
+    "id=*;type=*;actions=*"
+  ]
+  principal_ids = concat(
+    [ boundary_group.ORG_ADMINS.id ],
+  )
+  
+  grant_scope_id = boundary_scope.PROJ_DEVOPS.id
+  scope_id = boundary_scope.ORG.id
+}
+
+
 /////////////////////////////////////////////////
 // Accounts
 //
@@ -243,4 +259,121 @@ resource "boundary_group" "ORG_ADMINS" {
   )
 
   scope_id = boundary_scope.ORG.id
+}
+
+/////////////////////////////////////////////////
+// Targets
+/////////////////////////////////////////////////
+
+/////////////////////////////////////////////////
+// Host catalogs
+//
+// A host catalog is a resource that contains
+//  hosts and host sets. A host catalog can only
+//  be defined within a project.
+/////////////////////////////////////////////////
+
+resource "boundary_host_catalog_static" "DOCKER_EXAMPLES" {
+  name        = "docker-demo"
+  description = "Docker demo services"
+  
+  scope_id = boundary_scope.PROJ_DEVOPS.id
+}
+
+/////////////////////////////////////////////////
+// Hosts
+//
+// A host is a resource that represents a
+// computing element with a network address
+// reachable from Boundary. A host belongs to a
+// host catalog.
+/////////////////////////////////////////////////
+
+resource "boundary_host_static" "DOCKER_DEMO_WEBSERVER" {
+  for_each = toset(["1","2","3"])
+
+  name = format("%s-%s","docker-demo-web",each.key)
+  description = format("%s (%s)","Demo webserver",each.key)
+  
+  // docker dns-name (as seen from boundary worker)
+  address = format("%s-%s","demo-web",each.key)
+
+  host_catalog_id = boundary_host_catalog_static.DOCKER_EXAMPLES.id
+}
+
+resource "boundary_host_static" "DOCKER_ADMINER" {
+  name = "docker-adminer"
+  description = "Adminer UI for boundary database"
+  
+  // docker dns-name (as seen from boundary worker)
+  address = "adminer"
+
+  host_catalog_id = boundary_host_catalog_static.DOCKER_EXAMPLES.id
+}
+
+/////////////////////////////////////////////////
+// Host sets
+//
+// A host set is a resource that represents a
+// collection of hosts which are considered
+// equivalent for the purposes of access control.
+/////////////////////////////////////////////////
+
+resource "boundary_host_set_static" "DOCKER_DEMO_WEBSERVERS" {
+  name = "docker-demo"
+  description = "Docker demo webserver(s)"
+
+  host_ids = concat(
+    [
+      for item in boundary_host_static.DOCKER_DEMO_WEBSERVER: item.id
+    ],
+  )
+  host_catalog_id = boundary_host_catalog_static.DOCKER_EXAMPLES.id
+}
+
+resource "boundary_host_set_static" "DOCKER_ADMINER" {
+  name = "docker-adminer"
+  description = "Docker adminer"
+
+  host_ids = [ boundary_host_static.DOCKER_ADMINER.id ]
+  host_catalog_id = boundary_host_catalog_static.DOCKER_EXAMPLES.id
+}
+
+/////////////////////////////////////////////////
+// Targets
+//
+// A target is a resource that represents a
+// networked service with an associated set of
+// permissions a user can connect to and interact
+// with through Boundary by way of a session. 
+/////////////////////////////////////////////////
+
+resource "boundary_target" "DEMO_WEBSERVERS" {
+  name         = "demo-webservers"
+  description  = "Demo webserver targets"
+  type         = "tcp"
+  
+  default_port             = 80
+  session_connection_limit = -1
+  session_max_seconds      = 300
+  
+  host_source_ids = [
+    boundary_host_set_static.DOCKER_DEMO_WEBSERVERS.id,
+  ]
+  scope_id = boundary_scope.PROJ_DEVOPS.id
+}
+
+resource "boundary_target" "DEMO_ADMINER" {
+  name         = "demo-adminer"
+  description  = "Demo adminer target"
+  type         = "tcp"
+  
+  default_port             = 8080
+  session_connection_limit = -1
+  session_max_seconds      = 300
+  
+  host_source_ids = [
+    boundary_host_set_static.DOCKER_ADMINER.id,
+  ]
+  scope_id = boundary_scope.PROJ_DEVOPS.id
 }

@@ -4,6 +4,7 @@
 // Docker host resources
 /////////////////////////////////////////////////
 
+// Container images
 data "docker_registry_image" "IMAGE" {
   for_each = { for image in local.images: image.name => image }
   name = format("%s:%s",each.key,each.value.version)
@@ -20,10 +21,12 @@ resource "docker_image" "IMAGE" {
   ]
 }
 
+// Persist volumes
 resource "docker_volume" "DATABASE" {
   name = "boundary-db"
 }
 
+// Networks
 resource "docker_network" "FRONTEND" {
   name = "boundary-fe"
 }
@@ -33,9 +36,10 @@ resource "docker_network" "BACKEND" {
 }
 
 /////////////////////////////////////////////////
-// Delays (timing workaround)
+// Delays (timing workarounds for deploy)
 /////////////////////////////////////////////////
 
+// Wait with database initialization until database is ready/online
 resource "time_sleep" "WAIT_DB_READY" {
   create_duration = "5s"
   depends_on = [
@@ -43,6 +47,7 @@ resource "time_sleep" "WAIT_DB_READY" {
   ]
 }
 
+// Wait with boundary startup untill database is initialized
 resource "time_sleep" "WAIT_DB_INITIALIZED" {
   create_duration = "5s"
   depends_on = [
@@ -53,7 +58,7 @@ resource "time_sleep" "WAIT_DB_INITIALIZED" {
 }
 
 /////////////////////////////////////////////////
-// Boundary Database
+// Boundary database (postgres)
 /////////////////////////////////////////////////
 
 # Create a container
@@ -87,7 +92,26 @@ resource "docker_container" "DATABASE" {
 }
 
 /////////////////////////////////////////////////
-// Boundary Database Initializer
+// Database Console (adminer)
+/////////////////////////////////////////////////
+
+resource "docker_container" "DATABASE_ADMINER" {
+  image = docker_image.IMAGE["adminer"].latest
+  name  = "boundary-adminer"
+
+  env = [
+    "ADMINER_DEFAULT_SERVER=db"
+  ]
+
+  // ui is at port 8080
+  networks_advanced {
+    name = docker_network.BACKEND.name
+    aliases = ["adminer"]
+  }
+}
+
+/////////////////////////////////////////////////
+// Database initializer (boundary)
 /////////////////////////////////////////////////
 
 resource "docker_container" "DATABASE_INIT" {
@@ -145,7 +169,7 @@ resource "docker_container" "DATABASE_INIT" {
 
 
 /////////////////////////////////////////////////
-// Boundary Controller
+// Boundary controller node
 /////////////////////////////////////////////////
 
 resource "docker_container" "CONTROLLER" {
@@ -175,6 +199,12 @@ resource "docker_container" "CONTROLLER" {
   ports {
     internal = 9200
     external = 9200
+  }
+  
+  // Remove once dedicated worker is added
+  ports {
+    internal = 9202
+    external = 9202
   }
 
   upload {
@@ -208,6 +238,22 @@ resource "docker_container" "CONTROLLER" {
 }
 
 /////////////////////////////////////////////////
-// Boundary Worker(s)
+// Boundary worker node(s)
 /////////////////////////////////////////////////
-// N/A
+// TODO dedicated worker node(s)
+
+/////////////////////////////////////////////////
+// Demo boundary target(s)
+/////////////////////////////////////////////////
+
+resource "docker_container" "DEMO_WEBSERVER" {
+  for_each = toset(["1","2","3"])
+
+  image = docker_image.IMAGE["traefik/whoami"].latest
+  name  = format("%s-%s","demo-webserver",each.key)
+
+  networks_advanced {
+    name = docker_network.BACKEND.name
+    aliases = [format("%s-%s","demo-web",each.key)]
+  }
+}
