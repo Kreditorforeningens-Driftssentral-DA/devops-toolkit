@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## March 27, 2022
+HASHICORP-TERRAFORM:
+* Added example Azure [module](hashicorp-terraform/modules/azure/standalone-linux-scaleset) & [project](hashicorp-terraform/azure-scaleset-example) for deploying a Linux scaleset w/public loadbalancer.
+
 ## March 26, 2022
 HASHICORP-BOUNDARY:
   * Added example targets to [example](hashicorp-boundary/tf-deploy) boundary deployment (3 x webservers + adminer).
