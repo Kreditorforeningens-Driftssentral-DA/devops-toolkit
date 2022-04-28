@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## March 28, 2022
+HASHICORP-TERRAFORM:
+* Added example Helper [TLS module](hashicorp-terraform/modules/helpers/certificates/) for creating CA & self-signed certificates for development/testing.
+
 ## March 27, 2022
 HASHICORP-TERRAFORM:
 * Added example Azure [module](hashicorp-terraform/modules/azure/standalone-linux-scaleset) & [project](hashicorp-terraform/azure-scaleset-example) for deploying a Linux scaleset w/public loadbalancer.
