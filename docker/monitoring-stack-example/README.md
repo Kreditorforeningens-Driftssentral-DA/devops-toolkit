@@ -4,7 +4,7 @@
 
   * [Grafana](http://localhost:3000) for visualizing metrics & logs. (grafana/grafana)
   * [Grafana Loki](http://localhost:3100) for storing & receiving logs.
-  * [Grafana Mimir](http://localhost:3100) for storing prometheus metrics.
+  * [Grafana Mimir](http://localhost:8080) for storing prometheus metrics.
   * [Prometheus](http://localhost:9090) for scraping metrics from services.
   * [MinIO](http://localhost:9001) for loki backend storage (s3). (minio/SecretKey)
   * [Fluent-bit](http://localhost:2020) for generating logs (dummy) to loki
