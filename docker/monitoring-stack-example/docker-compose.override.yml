@@ -13,8 +13,8 @@ services:
       resources:
         limits:
           memory: 200M
-    ports:
-    - '8161:8161'
+    ports: ["8161:8161"]
+    
 
   telegraf:
     image: telegraf:latest
@@ -30,6 +30,7 @@ services:
       ACTIVEMQ_PASSWORD: admin
       ACTIVEMQ_WEBADMIN: admin
     volumes: ["./files/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro"]
+    ports: ["9273:9273"]
 
 # ////////////////////////////////
 # // Monitor TRAEFIK

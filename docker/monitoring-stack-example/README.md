@@ -2,13 +2,13 @@
 
 ## Description
 
-  * [Grafana](http://localhost:3000) for visualizing metrics & logs. (grafana/grafana)
-  * [Grafana Loki](http://localhost:3100) for storing & receiving logs.
-  * [Grafana Mimir](http://localhost:8080) for storing prometheus metrics.
-  * [Prometheus](http://localhost:9090) for scraping metrics from services.
-  * [MinIO](http://localhost:9001) for loki backend storage (s3). (minio/SecretKey)
-  * [Fluent-bit](http://localhost:2020) for generating logs (dummy) to loki
-  * Telegraf for ActiveMQ input -> prometheus output
+  * [Grafana](http://localhost:3000), for exploring and visualizing metrics/logs.
+  * [Grafana Loki](http://localhost:3100), for storing & receiving logs.
+  * [Grafana Mimir](http://localhost:8080), for storing prometheus metrics.
+  * [Prometheus](http://localhost:9090), for scraping metrics from services.
+  * [MinIO](http://localhost:9001), for Loki & Mimir backend storage (s3).
+  * [Fluent-bit](http://localhost:2020), for generating Loki logs.
+  * [Telegraf](http://localhost:9273), for publishing [ActiveMQ](http://localhost:8161) Prometheus metrics.
 
 ## Running
 
