@@ -1,0 +1,11 @@
+---
+version: '3.8'
+
+services:
+  
+  # Basic webserver; exposed on port :8080 on localhost
+  image: traefik/whoami:latest
+  ports:
+  - "8080:80"
+
+  #

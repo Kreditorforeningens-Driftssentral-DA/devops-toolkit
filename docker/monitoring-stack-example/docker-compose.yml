@@ -1,0 +1,160 @@
+# https://github.com/grafana/mimir/tree/main/docs/sources/tutorials/play-with-grafana-mimir
+---
+version: '3.8'
+
+volumes:
+  minio-data:  {}
+  prometheus-data: {}
+  #alertmanager-data: {}
+  #mimir-data: {}
+
+services:
+  
+# ///////////////////////////////////////////////
+# // Grafana dashboard
+# ///////////////////////////////////////////////
+
+  grafana:
+    image: grafana/grafana:latest
+    deploy:
+      resources:
+        limits:
+          memory: 150M
+    ports: ["3000:3000"]
+    environment:
+      GF_AUTH_DISABLE_LOGIN_FORM: 'true'
+      GF_AUTH_BASIC_ENABLED: 'false'
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_NAME: Main Org.
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel
+      GF_LOG_MODE: console
+    volumes: [./files/grafana/provisioning/:/etc/grafana/provisioning:ro]
+
+# ///////////////////////////////////////////////
+# // MinIO S3-compatible storage backend
+# ///////////////////////////////////////////////
+
+  minio:
+    image: minio/minio:latest
+    deploy:
+      resources:
+        limits:
+          memory: 150M
+    user: root
+    ports: ["9001:9001"]
+    volumes: ["minio-data:/data"]
+    environment:
+      #MINIO_BROWSER: 'off'
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: SecretKey
+      MINIO_PROMETHEUS_AUTH_TYPE: public
+      MINIO_PROMETHEUS_URL: http://prometheus:9090
+      MINIO_PROMETHEUS_JOB_ID: minio
+    entrypoint: []
+    command: [
+      "sh","-c",
+      "mkdir -p /data/loki /data/mimir /data/mimir-ruler /data/mimir-alertmanager && chmod 777 -R /data && minio server --address=':9000' --console-address=':9001' --quiet /data",
+    ]
+
+# ///////////////////////////////////////////////
+# // Grafana Mimir datasource (prometheus)
+# // See https://github.com/grafana/mimir/tree/main/docs/sources/tutorials/play-with-grafana-mimir
+# ///////////////////////////////////////////////
+
+  mimir:
+    depends_on: ["minio"]
+    image: grafana/mimir:latest
+    deploy:
+      resources:
+        limits:
+          memory: 200M
+    ports: ["8080:8080"]
+    volumes:
+     - ./files/mimir/:/etc/mimir/:ro
+    command: [
+      "--config.file=/etc/mimir/mimir.yml",
+    ]
+
+# ///////////////////////////////////////////////
+# // Prometheus datasource/scraper
+# ///////////////////////////////////////////////
+
+  prometheus:
+    depends_on: ["mimir"]
+    image: prom/prometheus:latest
+    deploy:
+      resources:
+        limits:
+          memory: 150M
+    ports: ["9090:9090"]
+    volumes: [
+      "prometheus-data:/prometheus",
+      "./files/prometheus/:/etc/prometheus/:ro",
+    ]
+    command: [
+      "--config.file=/etc/prometheus/prometheus.yml",
+      "--storage.tsdb.path=/prometheus",
+      "--storage.tsdb.retention.time=4h",
+      "--storage.tsdb.retention.size=1GB",
+      "--storage.tsdb.wal-compression",
+    ]
+
+# ///////////////////////////////////////////////
+# // Alertmanager (prometheus)
+# ///////////////////////////////////////////////
+
+  #alertmanager:
+  #  image: prom/alertmanager:latest
+  #  volumes: [
+  #    "alertmanager-data:/data",
+  #    "./files/alertmanager/:/etc/alertmanager/:ro",
+  #  ]
+  #  ports:
+  #  - 9093:9093
+  #  restart: always
+  #  command: [
+  #    "--config.file=/etc/alertmanager/config.yml",
+  #    "--storage.path=/data/alertmanager",
+  #    "--data.retention=4h",
+  #    "--web.listen-address=':9093'",
+  #    "--log.level='info'",
+  #  ]
+
+# ///////////////////////////////////////////////
+# // Grafana Loki datasource
+# ///////////////////////////////////////////////
+
+  loki:
+    depends_on: ["minio"]
+    image: grafana/loki:latest
+    user: root
+    deploy:
+      resources:
+        limits:
+          memory: 150M
+    ports: ["3100:3100"]
+    volumes: ["./files/loki/:/etc/loki/:ro"]
+    command: [
+      "-config.file=/etc/loki/config.yml",
+      "-config.expand-env=true",
+      "-log-config-reverse-order",
+    ]
+
+# ///////////////////////////////////////////////
+# // Fluent-Bit scraper
+# ///////////////////////////////////////////////
+
+  fluentbit:
+    depends_on: ["loki"]
+    image: fluent/fluent-bit:latest
+    deploy:
+      resources:
+        limits:
+          memory: 50M
+    ports: ["2020:2020"]
+    volumes: ["./files/fluentbit/:/fluentbit/:ro"]
+    entrypoint: /fluent-bit/bin/fluent-bit
+    command: [
+      "-c","/fluentbit/fluentbit.conf"
+    ]

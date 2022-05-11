@@ -1,0 +1,70 @@
+---
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  register_instrumentation: true
+
+distributor:
+  ring:
+    kvstore:
+      store: memberlist
+    
+ingester:
+  lifecycler:
+    ring:
+      kvstore:
+        store: memberlist
+      replication_factor: 1
+    final_sleep: 0s
+  chunk_idle_period: 5m
+  chunk_retain_period: 30s
+  max_chunk_age: 1m
+  #chunk_encoding: gzip
+  #chunk_target_size: 1572864
+
+memberlist:
+  abort_if_cluster_join_fails: false
+  bind_port: 7946
+  join_members:
+  - loki:7946
+  max_join_backoff: 1m
+  max_join_retries: 10
+  min_join_backoff: 1s
+
+schema_config:
+  configs:
+  - from: 1981-05-11
+    store: boltdb-shipper
+    object_store: s3
+    schema: v11
+    index:
+      prefix: index_
+      period: 24h
+
+storage_config:
+  boltdb_shipper:
+    active_index_directory: /tmp/index
+    cache_location: /tmp/index_cache
+    resync_interval: 15s
+    cache_ttl: 8h
+    shared_store: s3
+  aws:
+    endpoint: minio:9000
+    bucketnames: loki
+    access_key_id: minio
+    secret_access_key: SecretKey
+    s3forcepathstyle: true
+    insecure: true
+
+compactor:
+  #retention_enabled: true
+  working_directory: /tmp/compactor
+  shared_store: s3
+  compaction_interval: 1m # For testing
+
+limits_config:
+  enforce_metric_name: false
+  reject_old_samples: true
+  reject_old_samples_max_age: 2h
+  unordered_writes: true

@@ -1,0 +1,73 @@
+# Do not use this configuration in production.
+# It is for demonstration purposes only.
+# Run Mimir in single process mode, with all components running in 1 process. 
+# See:
+#   https://grafana.com/docs/mimir/latest/operators-guide/architecture/components/
+#   https://grafana.com/docs/mimir/latest/operators-guide/configuring/reference-configuration-parameters/
+---
+#target: all,alertmanager,overrides-exporter
+target: all
+multitenancy_enabled: false
+
+server:
+  log_level: warn
+
+memberlist:
+  join_members: ["mimir"]
+  abort_if_cluster_join_fails: false
+
+ingester:
+  ring:
+    replication_factor: 1
+    kvstore:
+      store: memberlist
+
+blocks_storage:
+  backend: s3
+  s3:
+    endpoint: minio:9000
+    bucket_name: mimir
+    access_key_id: minio
+    secret_access_key: SecretKey
+    insecure: true
+  filesystem:
+    dir: /tmp/blocks
+  tsdb:
+    dir: /data/ingester
+    retention_period: 30m # This should be larger than the "block_ranges_period"
+    block_ranges_period: ["5m"]
+
+ruler:
+  rule_path: /data/ruler
+  alertmanager_url: http://localhost:8080/alertmanager
+  ring: # Quickly detect unhealthy rulers to speed up the tutorial.
+    heartbeat_period: 5s
+    heartbeat_timeout: 10s
+
+ruler_storage:
+  backend: s3
+  s3:
+    endpoint: minio:9000
+    bucket_name: mimir-ruler
+    access_key_id: minio
+    secret_access_key: SecretKey
+    insecure: true
+
+alertmanager:
+  data_dir: /data/alertmanager
+  fallback_config_file: /etc/alertmanager-fallback.yaml
+  retention: 4h
+  sharding_ring:
+    replication_factor: 1
+    kvstore:
+      store: memberlist
+
+alertmanager_storage:
+  backend: s3
+  s3:
+    endpoint: minio:9000
+    bucket_name: mimir-alertmanager
+    access_key_id: minio
+    secret_access_key: SecretKey
+    insecure: true
+

@@ -1,0 +1,12 @@
+---
+groups:
+
+- name: demo
+  rules:
+  - alert: MessageQueueSize
+    expr: activemq_queues_size > 100
+    for: 10s
+    labels:
+      severity: slack
+    annotations:
+      summary: Queue > 100 for 10s

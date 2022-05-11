@@ -1,0 +1,52 @@
+---
+version: '3.8'
+
+services:
+
+# ////////////////////////////////
+# // Monitor ActiveMQ using Telegraf & Prometheus
+# ////////////////////////////////
+
+  activemq:
+    image: ghcr.io/kreditorforeningens-driftssentral-da/container-image-activemq:5.17.1
+    deploy:
+      resources:
+        limits:
+          memory: 200M
+    ports:
+    - '8161:8161'
+
+  telegraf:
+    image: telegraf:latest
+    deploy:
+      resources:
+        limits:
+          memory: 50M
+    restart: always
+    depends_on:
+    - activemq
+    environment:
+      ACTIVEMQ_USERNAME: admin
+      ACTIVEMQ_PASSWORD: admin
+      ACTIVEMQ_WEBADMIN: admin
+    volumes: ["./files/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro"]
+
+# ////////////////////////////////
+# // Monitor TRAEFIK
+# ////////////////////////////////
+# TODO
+
+# ////////////////////////////////
+# // Monitor NGINX
+# ////////////////////////////////
+# TODO
+
+# ////////////////////////////////
+# // Monitor HOST
+# ////////////////////////////////
+# TODO
+
+# ////////////////////////////////
+# // Monitor DOCKER
+# ////////////////////////////////
+# TODO
